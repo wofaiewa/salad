@@ -31,6 +31,7 @@ type GrabberControlsBinConfig struct {
 type GrabberControlsConfig struct {
 	Bins               []GrabberControlsBinConfig `json:"bins"`
 	HighAboveBowl      string                     `json:"high-above-bowl"`
+	InBowl             string                     `json:"in-bowl"`
 	LeftGripper        string                     `json:"left-gripper"`
 	LeftHome           string                     `json:"left-home"`
 	RightGripper       string                     `json:"right-gripper"`
@@ -82,13 +83,17 @@ func (cfg *GrabberControlsConfig) Validate(path string) ([]string, []string, err
 		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-home")
 	}
 
+	if cfg.InBowl == "" {
+		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "in-bowl")
+	}
+
 	requiredDeps := []string{}
 
 	requiredDeps = append(requiredDeps, cfg.HighAboveBowl)
 	requiredDeps = append(requiredDeps, cfg.LeftGripper)
 	requiredDeps = append(requiredDeps, cfg.LeftHome)
 	requiredDeps = append(requiredDeps, cfg.RightGripper)
-	requiredDeps = append(requiredDeps, cfg.RightAboveBowl, cfg.RightGrabBowl, cfg.RightAboveDelivery, cfg.RightBowlDelivery, cfg.RightHome)
+	requiredDeps = append(requiredDeps, cfg.RightAboveBowl, cfg.RightGrabBowl, cfg.RightAboveDelivery, cfg.RightBowlDelivery, cfg.RightHome, cfg.InBowl)
 
 	for i, bin := range cfg.Bins {
 		if bin.Name == "" {
@@ -121,6 +126,7 @@ type grabberControls struct {
 	bins               map[string]*grabberBinSwitches
 	highAboveBowl      sw.Switch
 	leftGripper        gripper.Gripper
+	leftInBowl         sw.Switch
 	leftHome           sw.Switch
 	rightGripper       gripper.Gripper
 	rightAboveBowl     sw.Switch
@@ -210,6 +216,12 @@ func NewGrabberControls(ctx context.Context, deps resource.Dependencies, name re
 	}
 	s.rightHome = rightHomeSwitch
 
+	leftInBowlSwitch, err := sw.FromDependencies(deps, conf.InBowl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get in-bowl switch '%s': %w", conf.InBowl, err)
+	}
+	s.leftInBowl = leftInBowlSwitch
+
 	for _, binCfg := range conf.Bins {
 		aboveBinSwitch, err := sw.FromDependencies(deps, binCfg.AboveBin)
 		if err != nil {
@@ -284,6 +296,11 @@ func (s *grabberControls) doGetFromBin(ctx context.Context, cmd map[string]inter
 		return nil, fmt.Errorf("failed to set high-above-bowl switch to position 2: %w", err)
 	}
 	s.logger.Debugf("Set high-above-bowl switch to position 2")
+
+	if err := s.leftInBowl.SetPosition(ctx, 2, nil); err != nil {
+		return nil, fmt.Errorf("failed to set in-bowl switch to position 2: %w", err)
+	}
+	s.logger.Debugf("Set in-bowl switch to position 2")
 
 	if err := s.leftGripper.Open(ctx, nil); err != nil {
 		return nil, fmt.Errorf("failed to open left gripper: %w", err)
