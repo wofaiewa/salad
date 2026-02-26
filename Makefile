@@ -34,3 +34,16 @@ all: test module.tar.gz
 
 setup:
 	go mod tidy
+
+.PHONY: va-update va-upload
+
+va-update: meta.json
+	viam module update --module=meta.json
+
+VA_VERSION ?= 0.0.0
+
+va-upload: dist
+    viam module upload --version=${VA_VERSION} --platform=any --public-namespace=ncs .
+
+dist:
+	npm run build
