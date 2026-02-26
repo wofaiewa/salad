@@ -14,6 +14,12 @@
       "model": "ncs:salad:passthrough-to-camera",
       "markdown_link": "README.md",
       "short_description": "passthrough vision service"
+    },
+    {
+      "api": "rdk:service:vision",
+      "model": "ncs:salad:file-vision",
+      "markdown_link": "README.md",
+      "short_description": "vision service that returns a mesh from a file"
     }
   ],
   "build": {

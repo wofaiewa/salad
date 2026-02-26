@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/pkg/errors"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	vision "go.viam.com/rdk/services/vision"
+	"go.viam.com/rdk/spatialmath"
 	vis "go.viam.com/rdk/vision"
 	"go.viam.com/rdk/vision/classification"
 	objdet "go.viam.com/rdk/vision/objectdetection"
@@ -17,34 +17,19 @@ import (
 )
 
 var (
-	PassthroughToCamera = resource.NewModel("ncs", "salad", "passthrough-to-camera")
-	errUnimplemented    = errors.New("unimplemented")
+	FileVision = resource.NewModel("ncs", "salad", "file-vision")
 )
 
 func init() {
-	resource.RegisterService(vision.API, PassthroughToCamera,
+	resource.RegisterService(vision.API, FileVision,
 		resource.Registration[vision.Service, *Config]{
-			Constructor: newSaladPassthroughToCamera,
+			Constructor: newFileVision,
 		},
 	)
 }
 
-type Config struct {
-	Camera string `json:"camera"`
-	/*
-		Put config attributes here. There should be public/exported fields
-		with a `json` parameter at the end of each attribute.
-
-		Example config struct:
-			type Config struct {
-				Pin   string `json:"pin"`
-				Board string `json:"board"`
-				MinDeg *float64 `json:"min_angle_deg,omitempty"`
-			}
-
-		If your model does not need a config, replace *Config in the init
-		function with resource.NoNativeConfig
-	*/
+type FileVisionConfig struct {
+	File string `json:"file"`
 }
 
 // Validate ensures all parts of the config are valid and important fields exist.
@@ -58,42 +43,43 @@ type Config struct {
 // (for example, "components.0"). You can use it in error messages
 // to indicate which resource has a problem.
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
-	return []string{cfg.Camera}, nil, nil
+	return nil, nil, nil
 }
 
-type saladPassthroughToCamera struct {
+type fileVision struct {
 	resource.AlwaysRebuild
 
 	name resource.Name
 
 	logger logging.Logger
-	cfg    *Config
+	cfg    *FileVisionConfig
+	mesh   *spatialmath.Mesh
 
 	cancelCtx  context.Context
 	cancelFunc func()
 	cam        camera.Camera
 }
 
-func newSaladPassthroughToCamera(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (vision.Service, error) {
-	conf, err := resource.NativeConfig[*Config](rawConf)
+func newFileVision(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (vision.Service, error) {
+	conf, err := resource.NativeConfig[*FileVisionConfig](rawConf)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewPassthroughToCamera(ctx, deps, rawConf.ResourceName(), conf, logger)
+	return NewFileVision(ctx, deps, rawConf.ResourceName(), conf, logger)
 
 }
 
-func NewPassthroughToCamera(ctx context.Context, deps resource.Dependencies, name resource.Name, conf *Config, logger logging.Logger) (vision.Service, error) {
-	cam, err := camera.FromProvider(deps, conf.Camera)
+func NewFileVision(ctx context.Context, deps resource.Dependencies, name resource.Name, conf *FileVisionConfig, logger logging.Logger) (vision.Service, error) {
+	mesh, err := spatialmath.NewMeshFromPLYFile(conf.File)
 	if err != nil {
 		return nil, err
 	}
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
-	s := &saladPassthroughToCamera{
-		cam:        cam,
+	s := &fileVision{
+		mesh:       mesh,
 		name:       name,
 		logger:     logger,
 		cfg:        conf,
@@ -103,63 +89,59 @@ func NewPassthroughToCamera(ctx context.Context, deps resource.Dependencies, nam
 	return s, nil
 }
 
-func (s *saladPassthroughToCamera) Name() resource.Name {
+func (s *fileVision) Name() resource.Name {
 	return s.name
 }
 
 // DetectionsFromCamera returns a list of detections from the next image from a specified camera using a configured detector.
-func (s *saladPassthroughToCamera) DetectionsFromCamera(ctx context.Context, cameraName string, extra map[string]interface{}) ([]objdet.Detection, error) {
+func (s *fileVision) DetectionsFromCamera(ctx context.Context, cameraName string, extra map[string]interface{}) ([]objdet.Detection, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // Detections returns a list of detections from a given image using a configured detector.
-func (s *saladPassthroughToCamera) Detections(ctx context.Context, img image.Image, extra map[string]interface{}) ([]objdet.Detection, error) {
+func (s *fileVision) Detections(ctx context.Context, img image.Image, extra map[string]interface{}) ([]objdet.Detection, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // ClassificationsFromCamera returns a list of classifications from the next image from a specified camera using a configured classifier.
-func (s *saladPassthroughToCamera) ClassificationsFromCamera(ctx context.Context, cameraName string, n int, extra map[string]interface{}) (classification.Classifications, error) {
+func (s *fileVision) ClassificationsFromCamera(ctx context.Context, cameraName string, n int, extra map[string]interface{}) (classification.Classifications, error) {
 	var classificationsRetVal classification.Classifications
 
 	return classificationsRetVal, fmt.Errorf("not implemented")
 }
 
 // Classifications returns a list of classifications from a given image using a configured classifier.
-func (s *saladPassthroughToCamera) Classifications(ctx context.Context, img image.Image, n int, extra map[string]interface{}) (classification.Classifications, error) {
+func (s *fileVision) Classifications(ctx context.Context, img image.Image, n int, extra map[string]interface{}) (classification.Classifications, error) {
 	var classificationsRetVal classification.Classifications
 
 	return classificationsRetVal, fmt.Errorf("not implemented")
 }
 
 // GetObjectPointClouds returns a list of 3D point cloud objects and metadata from the latest 3D camera image using a specified segmenter.
-func (s *saladPassthroughToCamera) GetObjectPointClouds(ctx context.Context, cameraName string, extra map[string]interface{}) ([]*vis.Object, error) {
-	pc, err := s.cam.NextPointCloud(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
+func (s *fileVision) GetObjectPointClouds(ctx context.Context, cameraName string, extra map[string]interface{}) ([]*vis.Object, error) {
 	obj := vis.NewEmptyObject()
-	obj.PointCloud = pc
+	obj.Geometry = s.mesh
 	return []*vis.Object{obj}, nil
 }
 
 // properties
-func (s *saladPassthroughToCamera) GetProperties(ctx context.Context, extra map[string]interface{}) (*vision.Properties, error) {
+func (s *fileVision) GetProperties(ctx context.Context, extra map[string]interface{}) (*vision.Properties, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // CaptureAllFromCamera returns the next image, detections, classifications, and objects all together, given a camera name. Used for
 // visualization.
-func (s *saladPassthroughToCamera) CaptureAllFromCamera(ctx context.Context, cameraName string, captureOptions viscapture.CaptureOptions, extra map[string]interface{}) (viscapture.VisCapture, error) {
+func (s *fileVision) CaptureAllFromCamera(ctx context.Context, cameraName string, captureOptions viscapture.CaptureOptions, extra map[string]interface{}) (viscapture.VisCapture, error) {
 	var visCaptureRetVal viscapture.VisCapture
 
 	return visCaptureRetVal, fmt.Errorf("not implemented")
 }
 
-func (s *saladPassthroughToCamera) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
+func (s *fileVision) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *saladPassthroughToCamera) Close(context.Context) error {
+func (s *fileVision) Close(context.Context) error {
 	// Put close code here
 	s.cancelFunc()
 	return nil
