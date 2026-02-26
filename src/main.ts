@@ -1,3 +1,3 @@
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  Hello, World!
+  <div>Hello, World!</div>
 `
