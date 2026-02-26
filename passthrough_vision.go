@@ -18,16 +18,10 @@ import (
 
 var (
 	PassthroughToCamera = resource.NewModel("ncs", "salad", "passthrough-to-camera")
-	FileCamera          = resource.NewModel("ncs", "salad", "file-vision-service")
 	errUnimplemented    = errors.New("unimplemented")
 )
 
 func init() {
-	resource.RegisterService(vision.API, PassthroughToCamera,
-		resource.Registration[vision.Service, *Config]{
-			Constructor: newSaladPassthroughToCamera,
-		},
-	)
 	resource.RegisterService(vision.API, PassthroughToCamera,
 		resource.Registration[vision.Service, *Config]{
 			Constructor: newSaladPassthroughToCamera,

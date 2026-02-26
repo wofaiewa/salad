@@ -22,7 +22,7 @@ var (
 
 func init() {
 	resource.RegisterService(vision.API, FileVision,
-		resource.Registration[vision.Service, *Config]{
+		resource.Registration[vision.Service, *FileVisionConfig]{
 			Constructor: newFileVision,
 		},
 	)
@@ -42,7 +42,7 @@ type FileVisionConfig struct {
 // where this resource appears in the machine's JSON configuration
 // (for example, "components.0"). You can use it in error messages
 // to indicate which resource has a problem.
-func (cfg *Config) Validate(path string) ([]string, []string, error) {
+func (cfg *FileVisionConfig) Validate(path string) ([]string, []string, error) {
 	return nil, nil, nil
 }
 
