@@ -3,7 +3,6 @@ import Cookies from "js-cookie";
 
 let apiKeyId = "";
 let apiKeySecret = "";
-let host = "";
 let machineId = "";
 
 async function main() {
@@ -32,7 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   ({
     apiKey: { id: apiKeyId, key: apiKeySecret },
     machineId: machineId,
-    hostname: host,
   } = JSON.parse(Cookies.get(machineCookieKey)!));
 
   main().catch((error) => {
