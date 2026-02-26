@@ -19,9 +19,11 @@ async function main() {
   const client = await VIAM.createViamClient(opts);
   const machine = await client.appClient.getRobot(machineId);
 
-  document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-    <div>Hello, World!</div>
-  `
+  if (machine) {
+    document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+      <div>Hello, ${machine.name}!</div>
+    ` 
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
