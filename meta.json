@@ -4,10 +4,19 @@
   "visibility": "public",
   "url": "",
   "description": "Viam module for automated salad assembly",
-  "applications": null,
   "markdown_link": "README.md",
   "entrypoint": "bin/salad",
   "first_run": "",
+  "applications": [
+    {
+      "name": "salad",
+      "type": "single_machine",
+      "entrypoint": "dist/index.html",
+      "fragmentIds": [
+        "02188473-58fd-4a54-b794-621c65ea5332"
+      ]
+    }
+  ],
   "models": [
     {
       "api": "rdk:service:generic",
