@@ -29,17 +29,11 @@ type GrabberControlsBinConfig struct {
 }
 
 type GrabberControlsConfig struct {
-	Bins               []GrabberControlsBinConfig `json:"bins"`
-	HighAboveBowl      string                     `json:"high-above-bowl"`
-	InBowl             string                     `json:"in-bowl"`
-	LeftGripper        string                     `json:"left-gripper"`
-	LeftHome           string                     `json:"left-home"`
-	RightGripper       string                     `json:"right-gripper"`
-	RightAboveBowl     string                     `json:"right-above-bowl"`
-	RightGrabBowl      string                     `json:"right-grab-bowl"`
-	RightAboveDelivery string                     `json:"right-above-delivery"`
-	RightBowlDelivery  string                     `json:"right-bowl-delivery"`
-	RightHome          string                     `json:"right-home"`
+	Bins          []GrabberControlsBinConfig `json:"bins"`
+	HighAboveBowl string                     `json:"high-above-bowl"`
+	InBowl        string                     `json:"in-bowl"`
+	LeftGripper   string                     `json:"left-gripper"`
+	LeftHome      string                     `json:"left-home"`
 }
 
 func (cfg *GrabberControlsConfig) Validate(path string) ([]string, []string, error) {
@@ -59,30 +53,6 @@ func (cfg *GrabberControlsConfig) Validate(path string) ([]string, []string, err
 		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "left-home")
 	}
 
-	if cfg.RightGripper == "" {
-		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-gripper")
-	}
-
-	if cfg.RightAboveBowl == "" {
-		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-above-bowl")
-	}
-
-	if cfg.RightGrabBowl == "" {
-		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-grab-bowl")
-	}
-
-	if cfg.RightAboveDelivery == "" {
-		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-above-delivery")
-	}
-
-	if cfg.RightBowlDelivery == "" {
-		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-bowl-delivery")
-	}
-
-	if cfg.RightHome == "" {
-		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-home")
-	}
-
 	if cfg.InBowl == "" {
 		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "in-bowl")
 	}
@@ -92,8 +62,6 @@ func (cfg *GrabberControlsConfig) Validate(path string) ([]string, []string, err
 	requiredDeps = append(requiredDeps, cfg.HighAboveBowl)
 	requiredDeps = append(requiredDeps, cfg.LeftGripper)
 	requiredDeps = append(requiredDeps, cfg.LeftHome)
-	requiredDeps = append(requiredDeps, cfg.RightGripper)
-	requiredDeps = append(requiredDeps, cfg.RightAboveBowl, cfg.RightGrabBowl, cfg.RightAboveDelivery, cfg.RightBowlDelivery, cfg.RightHome, cfg.InBowl)
 
 	for i, bin := range cfg.Bins {
 		if bin.Name == "" {
@@ -162,73 +130,37 @@ func NewGrabberControls(ctx context.Context, deps resource.Dependencies, name re
 		bins:       make(map[string]*grabberBinSwitches),
 	}
 
-	highAboveBowlSwitch, err := sw.FromDependencies(deps, conf.HighAboveBowl)
+	highAboveBowlSwitch, err := sw.FromProvider(deps, conf.HighAboveBowl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get high-above-bowl switch '%s': %w", conf.HighAboveBowl, err)
 	}
 	s.highAboveBowl = highAboveBowlSwitch
 
-	leftGripperComponent, err := gripper.FromDependencies(deps, conf.LeftGripper)
+	leftGripperComponent, err := gripper.FromProvider(deps, conf.LeftGripper)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get left gripper '%s': %w", conf.LeftGripper, err)
 	}
 	s.leftGripper = leftGripperComponent
 
-	leftHomeSwitch, err := sw.FromDependencies(deps, conf.LeftHome)
+	leftHomeSwitch, err := sw.FromProvider(deps, conf.LeftHome)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get left-home switch '%s': %w", conf.LeftHome, err)
 	}
 	s.leftHome = leftHomeSwitch
 
-	rightGripperComponent, err := gripper.FromDependencies(deps, conf.RightGripper)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get right gripper '%s': %w", conf.RightGripper, err)
-	}
-	s.rightGripper = rightGripperComponent
-
-	rightAboveBowlSwitch, err := sw.FromDependencies(deps, conf.RightAboveBowl)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get right-above-bowl switch '%s': %w", conf.RightAboveBowl, err)
-	}
-	s.rightAboveBowl = rightAboveBowlSwitch
-
-	rightGrabBowlSwitch, err := sw.FromDependencies(deps, conf.RightGrabBowl)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get right-grab-bowl switch '%s': %w", conf.RightGrabBowl, err)
-	}
-	s.rightGrabBowl = rightGrabBowlSwitch
-
-	rightAboveDeliverySwitch, err := sw.FromDependencies(deps, conf.RightAboveDelivery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get right-above-delivery switch '%s': %w", conf.RightAboveDelivery, err)
-	}
-	s.rightAboveDelivery = rightAboveDeliverySwitch
-
-	rightBowlDeliverySwitch, err := sw.FromDependencies(deps, conf.RightBowlDelivery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get right-bowl-delivery switch '%s': %w", conf.RightBowlDelivery, err)
-	}
-	s.rightBowlDelivery = rightBowlDeliverySwitch
-
-	rightHomeSwitch, err := sw.FromDependencies(deps, conf.RightHome)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get right-home switch '%s': %w", conf.RightHome, err)
-	}
-	s.rightHome = rightHomeSwitch
-
-	leftInBowlSwitch, err := sw.FromDependencies(deps, conf.InBowl)
+	leftInBowlSwitch, err := sw.FromProvider(deps, conf.InBowl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get in-bowl switch '%s': %w", conf.InBowl, err)
 	}
 	s.leftInBowl = leftInBowlSwitch
 
 	for _, binCfg := range conf.Bins {
-		aboveBinSwitch, err := sw.FromDependencies(deps, binCfg.AboveBin)
+		aboveBinSwitch, err := sw.FromProvider(deps, binCfg.AboveBin)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get above-bin switch '%s' for bin '%s': %w", binCfg.AboveBin, binCfg.Name, err)
 		}
 
-		inBinSwitch, err := sw.FromDependencies(deps, binCfg.InBin)
+		inBinSwitch, err := sw.FromProvider(deps, binCfg.InBin)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get in-bin switch '%s' for bin '%s': %w", binCfg.InBin, binCfg.Name, err)
 		}
@@ -250,9 +182,6 @@ func (s *grabberControls) Name() resource.Name {
 func (s *grabberControls) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
 	if _, ok := cmd["get_from_bin"]; ok {
 		return s.doGetFromBin(ctx, cmd)
-	}
-	if _, ok := cmd["deliver_bowl"]; ok {
-		return s.doDeliverBowl(ctx)
 	}
 	return nil, fmt.Errorf("unknown command, expected 'get_from_bin' or 'deliver_bowl' field")
 }
@@ -318,57 +247,6 @@ func (s *grabberControls) doGetFromBin(ctx context.Context, cmd map[string]inter
 		"success": true,
 		"bin":     binName,
 		"message": fmt.Sprintf("Successfully grabbed from bin '%s' and moved to bowl", binName),
-	}, nil
-}
-
-func (s *grabberControls) doDeliverBowl(ctx context.Context) (map[string]interface{}, error) {
-	s.logger.Infof("Executing deliver_bowl")
-
-	if err := s.rightAboveBowl.SetPosition(ctx, 2, nil); err != nil {
-		return nil, fmt.Errorf("failed to set right-above-bowl switch to position 2: %w", err)
-	}
-	s.logger.Debugf("Set right-above-bowl switch to position 2")
-
-	if err := s.rightGrabBowl.SetPosition(ctx, 2, nil); err != nil {
-		return nil, fmt.Errorf("failed to set right-grab-bowl switch to position 2: %w", err)
-	}
-	s.logger.Debugf("Set right-grab-bowl switch to position 2")
-
-	if _, err := s.rightGripper.Grab(ctx, nil); err != nil {
-		return nil, fmt.Errorf("failed to close right gripper: %w", err)
-	}
-	s.logger.Debugf("Closed right gripper")
-
-	if err := s.rightAboveBowl.SetPosition(ctx, 2, nil); err != nil {
-		return nil, fmt.Errorf("failed to set right-above-bowl switch to position 2 (second time): %w", err)
-	}
-	s.logger.Debugf("Set right-above-bowl switch to position 2 (second time)")
-
-	if err := s.rightAboveDelivery.SetPosition(ctx, 2, nil); err != nil {
-		return nil, fmt.Errorf("failed to set right-above-delivery switch to position 2: %w", err)
-	}
-	s.logger.Debugf("Set right-above-delivery switch to position 2")
-
-	if err := s.rightBowlDelivery.SetPosition(ctx, 2, nil); err != nil {
-		return nil, fmt.Errorf("failed to set right-bowl-delivery switch to position 2: %w", err)
-	}
-	s.logger.Debugf("Set right-bowl-delivery switch to position 2")
-
-	if err := s.rightGripper.Open(ctx, nil); err != nil {
-		return nil, fmt.Errorf("failed to open right gripper: %w", err)
-	}
-	s.logger.Debugf("Opened right gripper")
-
-	if err := s.rightHome.SetPosition(ctx, 2, nil); err != nil {
-		return nil, fmt.Errorf("failed to set right-home switch to position 2: %w", err)
-	}
-	s.logger.Debugf("Set right-home switch to position 2")
-
-	s.logger.Infof("Successfully completed deliver_bowl")
-
-	return map[string]interface{}{
-		"success": true,
-		"message": "Successfully delivered bowl",
 	}, nil
 }
 
