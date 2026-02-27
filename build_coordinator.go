@@ -182,7 +182,10 @@ func (s *buildCoordinator) DoCommand(ctx context.Context, cmd map[string]interfa
 	if _, ok := cmd["status"]; ok {
 		return s.getStatus(), nil
 	}
-	return nil, fmt.Errorf("unknown command, expected 'build_salad' or 'status' field")
+	if _, ok := cmd["list_ingredients"]; ok {
+		return s.listIngredients(), nil
+	}
+	return nil, fmt.Errorf("unknown command, expected 'build_salad', 'status', or 'list_ingredients' field")
 }
 
 func (s *buildCoordinator) updateStatus(status string, progress float64) {
@@ -198,6 +201,20 @@ func (s *buildCoordinator) getStatus() map[string]interface{} {
 	return map[string]interface{}{
 		"status":   s.status,
 		"progress": s.progress,
+	}
+}
+
+func (s *buildCoordinator) listIngredients() map[string]interface{} {
+	ingredients := make([]interface{}, 0, len(s.cfg.Ingredients))
+	for _, ing := range s.cfg.Ingredients {
+		ingredients = append(ingredients, map[string]interface{}{
+			"name":             ing.Name,
+			"grams_per_serving": ing.GramsPerServing,
+			"category":         ing.Category,
+		})
+	}
+	return map[string]interface{}{
+		"ingredients": ingredients,
 	}
 }
 
