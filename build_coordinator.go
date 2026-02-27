@@ -141,6 +141,19 @@ func (s *buildCoordinator) DoCommand(ctx context.Context, cmd map[string]interfa
 	if val, ok := cmd["build_salad"]; ok {
 		return s.doBuildSalad(ctx, val)
 	}
+	if _, ok := cmd["reset"]; ok {
+		err := s.resetAll(ctx)
+		if err != nil {
+			return map[string]interface{}{
+				"success": false,
+				"message": fmt.Sprintf("Failed to reset all controls: %v", err),
+			}, nil
+		}
+		return map[string]interface{}{
+			"success": true,
+			"message": "Successfully reset all controls",
+		}, nil
+	}
 	if _, ok := cmd["status"]; ok {
 		return s.getStatus(), nil
 	}
@@ -164,6 +177,7 @@ func (s *buildCoordinator) getStatus() map[string]interface{} {
 }
 
 func (s *buildCoordinator) doBuildSalad(ctx context.Context, value interface{}) (map[string]interface{}, error) {
+	// reset to initial positions
 	ingredientMap, ok := value.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("build_salad value must be a map of ingredient name to servings count")
@@ -349,6 +363,22 @@ func (s *buildCoordinator) readScaleWeight(ctx context.Context) (float64, error)
 	}
 
 	return 0, fmt.Errorf("no numeric reading found from scale sensor")
+}
+
+func (s *buildCoordinator) resetAll(ctx context.Context) error {
+	_, err := s.grabberControls.DoCommand(ctx, map[string]interface{}{
+		"reset": true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to reset grabber controls: %w", err)
+	}
+	_, err = s.bowlControls.DoCommand(ctx, map[string]interface{}{
+		"reset": true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to reset bowl controls: %w", err)
+	}
+	return nil
 }
 
 func toFloat64(v interface{}) (float64, error) {

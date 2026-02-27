@@ -204,6 +204,11 @@ func (s *grabberControls) doGetFromBin(ctx context.Context, cmd map[string]inter
 	}
 	s.logger.Debugf("Set above-bin switch to position 2")
 
+	if err := s.leftGripper.Open(ctx, nil); err != nil {
+		return nil, fmt.Errorf("failed to close left gripper: %w", err)
+	}
+	s.logger.Debugf("Closed left gripper")
+
 	if err := bin.inBin.SetPosition(ctx, 2, nil); err != nil {
 		return nil, fmt.Errorf("failed to set in-bin switch to position 2: %w", err)
 	}
@@ -233,6 +238,11 @@ func (s *grabberControls) doGetFromBin(ctx context.Context, cmd map[string]inter
 		return nil, fmt.Errorf("failed to open left gripper: %w", err)
 	}
 	s.logger.Debugf("Opened left gripper")
+
+	if err := s.highAboveBowl.SetPosition(ctx, 2, nil); err != nil {
+		return nil, fmt.Errorf("failed to set high-above-bowl switch to position 2: %w", err)
+	}
+	s.logger.Debugf("Set high-above-bowl switch to position 2")
 
 	s.logger.Infof("Successfully completed get_from_bin for bin '%s'", binName)
 
