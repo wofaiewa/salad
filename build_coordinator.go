@@ -285,6 +285,8 @@ func (s *buildCoordinator) doBuildSalad(ctx context.Context, value interface{}) 
 	s.progress = 0
 	s.mu.Unlock()
 
+	s.logger.Infof("New salad order received: %v", value)
+
 	defer func() {
 		s.mu.Lock()
 		s.buildCancelFunc = nil
