@@ -41,6 +41,12 @@
       "short_description": "controls grippers and dressing switches for pouring dressing"
     },
     {
+      "api": "rdk:service:generic",
+      "model": "ncs:salad:chefs-kiss-controls",
+      "markdown_link": "README.md#chefs-kiss-controls",
+      "short_description": "controls grippers and position switches for performing chefs kiss"
+    },
+    {
       "api": "rdk:service:vision",
       "model": "ncs:salad:passthrough-to-camera",
       "markdown_link": "README.md#passthrough-to-camera",
