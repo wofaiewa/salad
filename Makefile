@@ -40,7 +40,7 @@ setup:
 va-update: meta.json
 	viam module update --module=meta.json
 
-VA_VERSION ?= 0.0.7
+VA_VERSION ?= 0.0.8
 
 va-upload:
 	viam module upload --version=${VA_VERSION} --platform=any --public-namespace=ncs .
