@@ -14,6 +14,9 @@
 
   let limit = $derived(portionLimits[category] ?? 1);
   let label = $derived(categoryLabels[category] ?? category);
+  let categoryTotal = $derived(
+    items.reduce((sum, ing) => sum + (order[ing.name] ?? 0), 0),
+  );
 </script>
 
 <div class="category-section">
@@ -25,6 +28,7 @@
         name={ing.name}
         count={order[ing.name] ?? 0}
         {limit}
+        {categoryTotal}
         onUpdate={(count) => onUpdate(ing.name, count)}
       />
     {/each}
