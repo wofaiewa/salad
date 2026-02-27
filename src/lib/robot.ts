@@ -5,6 +5,7 @@ import type { Ingredient } from "./types";
 let robotClient: VIAM.RobotClient;
 let coordinator: VIAM.GenericServiceClient;
 let streamClient: VIAM.StreamClient;
+let cameraStream: MediaStream;
 
 export async function initConnection(): Promise<void> {
   let apiKeyId = "";
@@ -34,6 +35,7 @@ export async function initConnection(): Promise<void> {
 
   coordinator = new VIAM.GenericServiceClient(robotClient, "salad-coordinator");
   streamClient = new VIAM.StreamClient(robotClient);
+  cameraStream = await streamClient.getStream("overhead-webcam");
 }
 
 export async function fetchIngredients(): Promise<Ingredient[]> {
@@ -62,10 +64,6 @@ export async function stopBuild(): Promise<void> {
   await coordinator.doCommand({ stop: true });
 }
 
-export async function getCameraStream(name: string): Promise<MediaStream> {
-  return streamClient.getStream(name);
-}
-
-export async function removeCameraStream(name: string): Promise<void> {
-  await streamClient.remove(name);
+export function getCameraStream(): MediaStream {
+  return cameraStream;
 }

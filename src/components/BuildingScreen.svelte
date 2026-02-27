@@ -24,9 +24,7 @@
       console.error("build_salad error:", err),
     );
 
-    getCameraStream("overhead-webcam")
-      .then((stream) => { video.srcObject = stream; })
-      .catch((err) => console.error("Camera stream error:", err));
+    video.srcObject = getCameraStream();
 
     const interval = setInterval(async () => {
       try {

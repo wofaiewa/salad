@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { initConnection, fetchIngredients, getCameraStream, removeCameraStream } from "./lib/robot";
+  import { initConnection, fetchIngredients, getCameraStream } from "./lib/robot";
   import type { Ingredient, AppScreen } from "./lib/types";
   import OrderingScreen from "./components/OrderingScreen.svelte";
   import BuildingScreen from "./components/BuildingScreen.svelte";
@@ -13,20 +13,14 @@
   let showCamera = $state(false);
   let cameraVideo: HTMLVideoElement = $state()!;
 
-  async function openCamera() {
+  function openCamera() {
+    cameraVideo.srcObject = getCameraStream();
     showCamera = true;
-    try {
-      const stream = await getCameraStream("overhead-webcam");
-      cameraVideo.srcObject = stream;
-    } catch (err) {
-      console.error("Camera stream error:", err);
-    }
   }
 
-  async function closeCamera() {
+  function closeCamera() {
     cameraVideo.srcObject = null;
     showCamera = false;
-    await removeCameraStream("overhead-webcam");
   }
 
   onMount(async () => {
