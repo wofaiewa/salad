@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import { initConnection, fetchIngredients, getCameraStream } from "./lib/robot";
   import type { Ingredient, AppScreen } from "./lib/types";
   import OrderingScreen from "./components/OrderingScreen.svelte";
@@ -11,18 +11,13 @@
   let order: Record<string, number> = $state({});
   let error = $state("");
   let showCamera = $state(false);
-  let cameraVideo: HTMLVideoElement = $state()!;
 
-  async function openCamera() {
-    showCamera = true;
-    await tick();
-    cameraVideo.srcObject = getCameraStream();
+  function attachStream(node: HTMLVideoElement) {
+    node.srcObject = getCameraStream();
   }
 
-  function closeCamera() {
-    cameraVideo.srcObject = null;
-    showCamera = false;
-  }
+  function openCamera() { showCamera = true; }
+  function closeCamera() { showCamera = false; }
 
   onMount(async () => {
     try {
@@ -50,6 +45,10 @@
   }
 </script>
 
+{#if screen !== "loading" && screen !== "error"}
+  <video use:attachStream autoplay playsinline style="display:none"></video>
+{/if}
+
 {#if screen !== "loading" && screen !== "error" && screen !== "building"}
   <button class="camera-fab" onclick={openCamera}>📷</button>
 {/if}
@@ -71,7 +70,7 @@
       onkeydown={(e) => e.stopPropagation()}
     >
       <button class="camera-modal-close" onclick={closeCamera}>✕</button>
-      <video class="camera-modal-video" bind:this={cameraVideo} autoplay playsinline></video>
+      <video class="camera-modal-video" use:attachStream autoplay playsinline></video>
     </div>
   </div>
 {/if}
