@@ -61,7 +61,7 @@
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" style="width: {progress}%"></div>
     </div>
-    <div class="progress-pct">{progress}%</div>
+    <span class="progress-pct">{progress}%</span>
   </div>
   <button class="btn-stop" disabled={stopping} onclick={handleStop}>
     {stopping ? "Stopping\u2026" : "Stop Build"}
