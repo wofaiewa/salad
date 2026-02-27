@@ -22,13 +22,14 @@ func init() {
 }
 
 type DressingControlsConfig struct {
-	Gripper         string  `json:"gripper"`
-	PrepareDressing string  `json:"prepare-dressing"`
-	GrabDressing    string  `json:"grab-dressing"`
-	PourDressing    string  `json:"pour-dressing"`
-	PourDressing2   string  `json:"pour-dressing2"`
-	Home            string  `json:"home"`
-	ShakeArmService *string `json:"shake-arm-service,omitempty"`
+	Gripper          string  `json:"gripper"`
+	PrepareDressing  string  `json:"prepare-dressing"`
+	GrabDressing     string  `json:"grab-dressing"`
+	PourDressing     string  `json:"pour-dressing"`
+	PourDressing2    string  `json:"pour-dressing2"`
+	PostPourDressing string  `json:"post-pour-dressing"`
+	Home             string  `json:"home"`
+	ShakeArmService  *string `json:"shake-arm-service,omitempty"`
 }
 
 func (cfg *DressingControlsConfig) Validate(path string) ([]string, []string, error) {
@@ -50,6 +51,9 @@ func (cfg *DressingControlsConfig) Validate(path string) ([]string, []string, er
 
 	if cfg.PourDressing2 == "" {
 		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "right-above-delivery")
+	}
+	if cfg.PostPourDressing == "" {
+		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "post-pour-dressing")
 	}
 
 	if cfg.Home == "" {
@@ -78,13 +82,14 @@ type dressingControls struct {
 	cancelCtx  context.Context
 	cancelFunc func()
 
-	gripper         gripper.Gripper
-	grabDressing    sw.Switch
-	prepareDressing sw.Switch
-	dressingPour    sw.Switch
-	dressingPour2   sw.Switch
-	home            sw.Switch
-	shakeArmService genericservice.Service
+	gripper          gripper.Gripper
+	grabDressing     sw.Switch
+	prepareDressing  sw.Switch
+	dressingPour     sw.Switch
+	dressingPour2    sw.Switch
+	postPourDressing sw.Switch
+	home             sw.Switch
+	shakeArmService  genericservice.Service
 }
 
 func newDressingControls(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (resource.Resource, error) {
@@ -136,6 +141,12 @@ func NewDressingControls(ctx context.Context, deps resource.Dependencies, name r
 		return nil, fmt.Errorf("failed to get pour-dressing2 switch '%s': %w", conf.PourDressing2, err)
 	}
 	s.dressingPour2 = pourDressing2Switch
+
+	postPourDressingSwitch, err := sw.FromProvider(deps, conf.PostPourDressing)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get post-pour-dressing switch '%s': %w", conf.PostPourDressing, err)
+	}
+	s.postPourDressing = postPourDressingSwitch
 
 	homeSwitch, err := sw.FromProvider(deps, conf.Home)
 	if err != nil {
@@ -228,6 +239,11 @@ func (s *dressingControls) doPourDressing(ctx context.Context) (map[string]inter
 			return nil, fmt.Errorf("failed to shake arm: %w", err)
 		}
 	}
+
+	if err := s.postPourDressing.SetPosition(ctx, 2, nil); err != nil {
+		return nil, fmt.Errorf("failed to set post-pour-dressing switch to position 2: %w", err)
+	}
+	s.logger.Debugf("Set post-pour-dressing switch to position 2")
 
 	if err := s.prepareDressing.SetPosition(ctx, 2, nil); err != nil {
 		return nil, fmt.Errorf("failed to set prepare-dressing switch to position 2: %w", err)

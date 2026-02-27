@@ -12,9 +12,7 @@
       "name": "salad",
       "type": "single_machine",
       "entrypoint": "dist/index.html",
-      "fragmentIds": [
-        "02188473-58fd-4a54-b794-621c65ea5332"
-      ]
+      "fragmentIds": ["02188473-58fd-4a54-b794-621c65ea5332"]
     }
   ],
   "models": [
@@ -35,6 +33,12 @@
       "model": "ncs:salad:grabber-controls",
       "markdown_link": "README.md#grabber-controls",
       "short_description": "controls grippers and bin switches for grabbing ingredients and delivering bowls"
+    },
+    {
+      "api": "rdk:service:generic",
+      "model": "ncs:salad:dressing-controls",
+      "markdown_link": "README.md#dressing-controls",
+      "short_description": "controls grippers and dressing switches for pouring dressing"
     },
     {
       "api": "rdk:service:vision",
