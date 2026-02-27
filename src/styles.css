@@ -358,6 +358,73 @@ body {
   background: var(--green-darker);
 }
 
+/* ── Camera FAB & Modal ──────────────────────────────── */
+.camera-fab {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 200;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--green-dark);
+  font-size: 1.25rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.camera-fab:hover {
+  background: var(--green-darker);
+}
+
+.camera-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-modal {
+  position: relative;
+  background: #000;
+  border-radius: var(--tile-radius);
+  overflow: hidden;
+  width: 90%;
+  max-width: 800px;
+}
+
+.camera-modal-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+}
+
+.camera-modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Error State ─────────────────────────────────────── */
 .error-screen {
   display: flex;

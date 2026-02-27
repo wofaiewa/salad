@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { initConnection, fetchIngredients } from "./lib/robot";
+  import { initConnection, fetchIngredients, getCameraStream, removeCameraStream } from "./lib/robot";
   import type { Ingredient, AppScreen } from "./lib/types";
   import OrderingScreen from "./components/OrderingScreen.svelte";
   import BuildingScreen from "./components/BuildingScreen.svelte";
@@ -10,6 +10,24 @@
   let ingredients: Ingredient[] = $state([]);
   let order: Record<string, number> = $state({});
   let error = $state("");
+  let showCamera = $state(false);
+  let cameraVideo: HTMLVideoElement;
+
+  async function openCamera() {
+    showCamera = true;
+    try {
+      const stream = await getCameraStream("overhead-webcam");
+      cameraVideo.srcObject = stream;
+    } catch (err) {
+      console.error("Camera stream error:", err);
+    }
+  }
+
+  async function closeCamera() {
+    cameraVideo.srcObject = null;
+    showCamera = false;
+    await removeCameraStream("overhead-webcam");
+  }
 
   onMount(async () => {
     try {
@@ -36,6 +54,19 @@
     screen = "ordering";
   }
 </script>
+
+{#if screen !== "loading" && screen !== "error" && screen !== "building"}
+  <button class="camera-fab" onclick={openCamera}>📷</button>
+{/if}
+
+{#if showCamera}
+  <div class="camera-modal-backdrop" onclick={closeCamera}>
+    <div class="camera-modal" onclick={(e) => e.stopPropagation()}>
+      <button class="camera-modal-close" onclick={closeCamera}>✕</button>
+      <video class="camera-modal-video" bind:this={cameraVideo} autoplay playsinline></video>
+    </div>
+  </div>
+{/if}
 
 {#if screen === "loading"}
   <div class="loading">Connecting&hellip;</div>
