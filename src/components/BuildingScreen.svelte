@@ -56,8 +56,8 @@
 
 <div class="building-screen">
   <h1>Building Your Salad&hellip;</h1>
-  <div class="status-text">{status}</div>
   <div class="progress-container">
+    <div class="status-text">{status}</div>
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" style="width: {progress}%"></div>
     </div>
