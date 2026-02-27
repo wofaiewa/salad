@@ -29,11 +29,12 @@ type GrabberControlsBinConfig struct {
 }
 
 type GrabberControlsConfig struct {
-	Bins          []GrabberControlsBinConfig `json:"bins"`
-	HighAboveBowl string                     `json:"high-above-bowl"`
-	InBowl        string                     `json:"in-bowl"`
-	LeftGripper   string                     `json:"left-gripper"`
-	LeftHome      string                     `json:"left-home"`
+	Bins            []GrabberControlsBinConfig `json:"bins"`
+	HighAboveBowl   string                     `json:"high-above-bowl"`
+	InBowl          string                     `json:"in-bowl"`
+	LeftGripper     string                     `json:"left-gripper"`
+	LeftHome        string                     `json:"left-home"`
+	ShakeArmService *string                    `json:"shake-arm-service,omitempty"`
 }
 
 func (cfg *GrabberControlsConfig) Validate(path string) ([]string, []string, error) {
@@ -63,6 +64,9 @@ func (cfg *GrabberControlsConfig) Validate(path string) ([]string, []string, err
 	requiredDeps = append(requiredDeps, cfg.LeftGripper)
 	requiredDeps = append(requiredDeps, cfg.LeftHome)
 	requiredDeps = append(requiredDeps, cfg.InBowl)
+	if cfg.ShakeArmService != nil && *cfg.ShakeArmService != "" {
+		requiredDeps = append(requiredDeps, *cfg.ShakeArmService)
+	}
 
 	for i, bin := range cfg.Bins {
 		if bin.Name == "" {
@@ -92,11 +96,12 @@ type grabberControls struct {
 	cancelCtx  context.Context
 	cancelFunc func()
 
-	bins          map[string]*grabberBinSwitches
-	highAboveBowl sw.Switch
-	leftGripper   gripper.Gripper
-	leftInBowl    sw.Switch
-	leftHome      sw.Switch
+	bins            map[string]*grabberBinSwitches
+	highAboveBowl   sw.Switch
+	leftGripper     gripper.Gripper
+	leftInBowl      sw.Switch
+	leftHome        sw.Switch
+	shakeArmService genericservice.Service
 }
 
 type grabberBinSwitches struct {
@@ -164,6 +169,13 @@ func NewGrabberControls(ctx context.Context, deps resource.Dependencies, name re
 			aboveBin: aboveBinSwitch,
 			inBin:    inBinSwitch,
 		}
+	}
+	if conf.ShakeArmService != nil && *conf.ShakeArmService != "" {
+		shakeArmService, err := genericservice.FromProvider(deps, *conf.ShakeArmService)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get shake-arm-service '%s': %w", *conf.ShakeArmService, err)
+		}
+		s.shakeArmService = shakeArmService
 	}
 
 	s.logger.Infof("Grabber controls initialized with %d bins", len(s.bins))
@@ -244,6 +256,14 @@ func (s *grabberControls) doGetFromBin(ctx context.Context, cmd map[string]inter
 	}
 	s.logger.Debugf("Set high-above-bowl switch to position 2")
 
+	if s.shakeArmService != nil {
+		_, err := s.shakeArmService.DoCommand(ctx, map[string]interface{}{
+			"shake_arm": true,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to shake arm: %w", err)
+		}
+	}
 	s.logger.Infof("Successfully completed get_from_bin for bin '%s'", binName)
 
 	return map[string]interface{}{
