@@ -104,9 +104,11 @@ type buildCoordinator struct {
 	ingredients          map[string]float64 // name -> grams per serving
 	ingredientCategories map[string]string  // name -> category
 
-	mu       sync.RWMutex
-	status   string
-	progress float64
+	mu              sync.RWMutex
+	status          string
+	progress        float64
+	buildCancelFunc func()
+	buildDone       chan struct{}
 }
 
 func newBuildCoordinator(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (resource.Resource, error) {
@@ -166,6 +168,9 @@ func (s *buildCoordinator) DoCommand(ctx context.Context, cmd map[string]interfa
 	if val, ok := cmd["build_salad"]; ok {
 		return s.doBuildSalad(ctx, val)
 	}
+	if _, ok := cmd["stop"]; ok {
+		return s.doStop()
+	}
 	if _, ok := cmd["reset"]; ok {
 		err := s.resetAll(ctx)
 		if err != nil {
@@ -185,7 +190,7 @@ func (s *buildCoordinator) DoCommand(ctx context.Context, cmd map[string]interfa
 	if _, ok := cmd["list_ingredients"]; ok {
 		return s.listIngredients(), nil
 	}
-	return nil, fmt.Errorf("unknown command, expected 'build_salad', 'status', or 'list_ingredients' field")
+	return nil, fmt.Errorf("unknown command, expected 'build_salad', 'stop', 'reset', 'status', or 'list_ingredients' field")
 }
 
 func (s *buildCoordinator) updateStatus(status string, progress float64) {
@@ -218,7 +223,69 @@ func (s *buildCoordinator) listIngredients() map[string]interface{} {
 	}
 }
 
+func (s *buildCoordinator) doStop() (map[string]interface{}, error) {
+	s.mu.RLock()
+	cancelFunc := s.buildCancelFunc
+	done := s.buildDone
+	s.mu.RUnlock()
+
+	if cancelFunc == nil {
+		return map[string]interface{}{
+			"success": false,
+			"message": "No build in progress",
+		}, nil
+	}
+
+	s.logger.Infof("Stop requested, cancelling build")
+	cancelFunc()
+	<-done
+
+	return map[string]interface{}{
+		"success": true,
+		"message": "Build stopped",
+	}, nil
+}
+
 func (s *buildCoordinator) doBuildSalad(ctx context.Context, value interface{}) (map[string]interface{}, error) {
+	// Guard against concurrent builds.
+	s.mu.Lock()
+	if s.buildCancelFunc != nil {
+		s.mu.Unlock()
+		return map[string]interface{}{
+			"success": false,
+			"message": "A build is already in progress, use 'stop' to cancel it first",
+		}, nil
+	}
+	buildCtx, buildCancelFunc := context.WithCancel(s.cancelCtx)
+	s.buildCancelFunc = buildCancelFunc
+	s.buildDone = make(chan struct{})
+	s.mu.Unlock()
+
+	defer func() {
+		s.mu.Lock()
+		s.buildCancelFunc = nil
+		close(s.buildDone)
+		s.buildDone = nil
+		s.mu.Unlock()
+	}()
+
+	result, err := s.executeBuild(buildCtx, value)
+	if buildCtx.Err() != nil {
+		s.logger.Infof("Build stopped, resetting hardware")
+		if resetErr := s.resetAll(s.cancelCtx); resetErr != nil {
+			s.logger.Errorf("Failed to reset hardware after stop: %v", resetErr)
+		}
+		s.updateStatus("stopped", 0)
+		return map[string]interface{}{
+			"success": false,
+			"message": "Build stopped",
+		}, nil
+	}
+
+	return result, err
+}
+
+func (s *buildCoordinator) executeBuild(ctx context.Context, value interface{}) (map[string]interface{}, error) {
 	// reset to initial positions
 	err := s.resetAll(ctx)
 	if err != nil {
@@ -299,6 +366,9 @@ func (s *buildCoordinator) doBuildSalad(ctx context.Context, value interface{}) 
 	s.logger.Infof("Building salad with %d ingredients", len(targets))
 
 	for _, target := range targets {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		s.updateStatus(fmt.Sprintf("adding %s", target.name), completedServings/totalSteps*100)
 		s.logger.Infof("Adding ingredient %q: target %.1fg", target.name, target.targetGrams)
 		if err := s.addIngredient(ctx, target.name, target.targetGrams); err != nil {
@@ -362,6 +432,9 @@ func (s *buildCoordinator) addIngredient(ctx context.Context, name string, targe
 	var zeroChangeStreak int
 
 	for totalAdded < targetGrams {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		weightBefore, err := s.readScaleWeight(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to read scale before grab: %w", err)
