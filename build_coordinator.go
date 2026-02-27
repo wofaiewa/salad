@@ -178,6 +178,13 @@ func (s *buildCoordinator) getStatus() map[string]interface{} {
 
 func (s *buildCoordinator) doBuildSalad(ctx context.Context, value interface{}) (map[string]interface{}, error) {
 	// reset to initial positions
+	err := s.resetAll(ctx)
+	if err != nil {
+		return map[string]interface{}{
+			"success": false,
+			"message": fmt.Sprintf("Failed to reset all controls: %v", err),
+		}, nil
+	}
 	ingredientMap, ok := value.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("build_salad value must be a map of ingredient name to servings count")
