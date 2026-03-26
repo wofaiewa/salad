@@ -38,6 +38,7 @@ jobs:
           export CGO_ENABLED=1
           if [ "$VIAM_BUILD_ARCH" = "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
+            export STRIP=aarch64-linux-gnu-strip
           fi
           make module.tar.gz
 

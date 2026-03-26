@@ -2,6 +2,7 @@
 GO_BUILD_ENV :=
 GO_BUILD_FLAGS :=
 MODULE_BINARY := bin/salad
+STRIP ?= strip
 
 ifeq ($(VIAM_TARGET_OS), windows)
 	GO_BUILD_ENV += GOOS=windows GOARCH=amd64
@@ -24,7 +25,7 @@ test:
 
 module.tar.gz: meta.json $(MODULE_BINARY)
 ifneq ($(VIAM_TARGET_OS), windows)
-	strip $(MODULE_BINARY)
+	$(STRIP) $(MODULE_BINARY)
 endif
 	tar czf $@ meta.json $(MODULE_BINARY) dist/
 
